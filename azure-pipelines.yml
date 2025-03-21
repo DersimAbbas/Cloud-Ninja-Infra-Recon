@@ -11,7 +11,7 @@ pool:
  vmImage: 'ubuntu-latest'
 
 variables:
-  azureSubscription: 'azureRM'
+  azureSubscription: 'AZR'
   containerRegistry: 'dersimabbas.azurecr.io'
   frontendDockerfilePath: 'src/Frontend/CloudNinjaBlazor/Dockerfile'
   backendDockerfilePath: 'src/Backend/CloudNinjaAPI/Dockerfile'
