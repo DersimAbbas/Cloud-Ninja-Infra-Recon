@@ -23,7 +23,7 @@ resource "azurerm_linux_web_app" "webapp" {
   service_plan_id = azurerm_service_plan.linux_plan.id
 
   site_config {
-   #linux_fx_version = "COMPOSE|${var.compose.url}"
+   #linux_fx_version = "COMPOSE|${var.compose_url}"
   }
   #app_settings = {
        #WEBSITES_ENABLE_APP_SERVICE_STORAGE = "false"

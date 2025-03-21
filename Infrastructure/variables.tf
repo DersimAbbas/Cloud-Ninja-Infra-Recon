@@ -16,7 +16,11 @@ variable "tenant_id" {
   type        = string
   sensitive   = true
 }
-/*variable "compose_url" {
+variable "compose_url" {
   type = string
   description = "Sas URL pointing to docker compose.yml blob"
-}*/
+}
+variable "azure_devops_pat" {
+  type = string
+  description = "PAT for authenticating to devops"
+}

@@ -17,11 +17,11 @@ data "azurerm_storage_container" "container" {
   storage_account_name = data.azurerm_storage_account.storage.name
 }
 
-data "azurerm_storage_blob" "compose_file" {
+/*data "azurerm_storage_blob" "compose_file" {
   name = "docker-compose.yml"
   storage_account_name = data.azurerm_storage_account.storage.name
   storage_container_name = data.azurerm_storage_container.container.name
-}
+}*/
 
 data "azurerm_storage_account_sas" "account_sas" {
   connection_string = data.azurerm_storage_account.storage.primary_connection_string
@@ -55,5 +55,7 @@ data "azurerm_storage_account_sas" "account_sas" {
     filter = false
   }
 }
-
+/*output "sas_url_string" {
+  value = data.azurerm_storage_account_sas.account_sas
+}*/
 

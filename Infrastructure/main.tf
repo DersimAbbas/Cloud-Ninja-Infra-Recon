@@ -12,14 +12,16 @@ provider "azurerm" {
   features {}
 }
 
-module "storage" {
+module "storageAccount" {
   source = "./Modules/storageAccount"
 }
 
 module "webapp" {
   source = "./Modules/WebApp"
+  compose_url = var.compose_url
 }
 
-module "functions" {
+module "AzureFunctions" {
   source = "./Modules/AzureFunctions"
+  azure_devops_pat = var.azure_devops_pat
 }
