@@ -1,0 +1,41 @@
+trigger: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  azureSubscription: 'azurerm'
+  ContainerRegistry: 'dersimabbas.azurecr.io'
+  webAppName: 'Cloud-NinjaRecon'
+  frontendImageName: 'frontend'
+  backendImageName: 'backend'
+  tag: 'latest'
+
+stages:
+- stage: Deploy
+  displayName: 'Deploy to web app'
+  jobs:
+  - job: DeployToWebApp
+    displayName: 'Deploy to web app'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Azure CLI login'
+      inputs:
+        azureSubscription: $(azureSubscription)
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          cat > docker-compose.yml << EOF
+          version: '3'
+          services:
+            frontend:
+              image: $(containerRegistry)/$(frontendImageName):$(tag)
+              ports:
+              - "80:80"
+              depends_on:
+              - backend
+              backend:
+                image: $(containerRegistry)/$(backendImageName):$(tag)
+                ports:
+                - "5000:80"
+          EOF
