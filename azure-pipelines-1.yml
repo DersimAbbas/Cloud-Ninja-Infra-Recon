@@ -1,11 +1,18 @@
 trigger: none
+pr: none
+
+# For newer Azure DevOps versions
+resources:
+  webhooks:
+    - webhook: ComposeToWebApp
+      connection: acr-connection
 
 pool:
   vmImage: 'ubuntu-latest'
 
 variables:
   azureSubscription: 'azurerm'
-  ContainerRegistry: 'dersimabbas.azurecr.io'
+  containerRegistry: 'dersimabbas.azurecr.io'
   webAppName: 'Cloud-NinjaRecon'
   frontendImageName: 'frontend'
   backendImageName: 'backend'
@@ -31,11 +38,14 @@ stages:
             frontend:
               image: $(containerRegistry)/$(frontendImageName):$(tag)
               ports:
-              - "80:80"
+                - "80:80"
               depends_on:
-              - backend
-              backend:
-                image: $(containerRegistry)/$(backendImageName):$(tag)
-                ports:
+                - backend
+            backend:
+              image: $(containerRegistry)/$(backendImageName):$(tag)
+              ports:
                 - "5000:80"
           EOF
+          
+          # Add command to deploy to web app
+          az webapp config container set --resource-group rg-dersimabbas --name $(Cloud-NinjaRecon) --multicontainer-config-type compose --multicontainer-config-file docker-compose.yml
