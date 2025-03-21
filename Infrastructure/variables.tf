@@ -16,3 +16,7 @@ variable "tenant_id" {
   type        = string
   sensitive   = true
 }
+/*variable "compose_url" {
+  type = string
+  description = "Sas URL pointing to docker compose.yml blob"
+}*/

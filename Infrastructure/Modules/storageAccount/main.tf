@@ -7,16 +7,53 @@ data "azurerm_resource_group" "myRG" {
   name = "rg-dersimabbas"
 }
 
-resource "azurerm_storage_account" "Compose" {
-  name = "docker-compose"
-  resource_group_name = data.azurerm_resource_group.myRG.name
-  location = data.azurerm_resource_group.myRG.location
-  account_tier = "Standard"
-  account_replication_type = "GRS"
+data "azurerm_storage_account" "storage" {
+    name = "dersimdockercompose"
+    resource_group_name = data.azurerm_resource_group.myRG.name
 }
 
-resource "azurerm_storage_container" "container" {
-  name = "composeContainer"
-  storage_account_id = azurerm_storage_account.Compose.id
-  container_access_type = "private"
+data "azurerm_storage_container" "container" {
+  name = "compose"
+  storage_account_name = data.azurerm_storage_account.storage.name
 }
+
+data "azurerm_storage_blob" "compose_file" {
+  name = "docker-compose.yml"
+  storage_account_name = data.azurerm_storage_account.storage.name
+  storage_container_name = data.azurerm_storage_container.container.name
+}
+
+data "azurerm_storage_account_sas" "account_sas" {
+  connection_string = data.azurerm_storage_account.storage.primary_connection_string
+  https_only = false
+  
+  resource_types {
+    service = true
+    container = true
+    object = false
+  }
+  services {
+    blob = true
+    queue = false
+    table = false
+    file = true
+  }
+
+  start = "2025-03-21T18:20:00Z"
+  expiry = "2025-03-27T18:20:00Z"
+
+  permissions {
+    read = true
+    write = true
+    delete = false
+    list = false
+    add = true
+    create = true
+    update = true
+    process = false
+    tag = false
+    filter = false
+  }
+}
+
+
