@@ -1,0 +1,75 @@
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - src/backend/AzFunctions/**  
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  azureSubcription: 'azurerm'
+  functionAppName: 'acr-pipeline-trigger'
+  projectPath: 'ACR_TriggerFunc'
+  buildConfiguration: 'Release'
+
+stages:
+- stage: Build
+  displayName: 'build Function app'
+  jobs:
+  - job: Build
+    displayName: 'build and test'
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Use .NET 8.0'
+      inputs:
+        packageType: 'sdk'
+        version: '8.0.x'
+    
+    - task: DotNetCoreCli@2
+      displayName: 'Restore nugetpackages'
+      inputs:
+       command: 'restore'
+       projects: '$(projectPath/*.csproj'
+       arguments: '--configuration $(buildConfiguration)'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish Project'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: $(projectPath)/*.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(build.ArtifactStagingDirectory)'
+        zipAfterPublish: true
+    
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifacts'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'function'
+
+- stage: Deploy
+  displayName: 'Deploy function app'
+  dependsOn: Build
+  jobs:
+  - job: Deploy
+    displayName: 'Deploy to Azure'
+    steps:
+    - task: DownloadBuildArtifacts@1
+      displayName: 'Downloading Artifacts'
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        artifactName: 'function'
+        downloadPath: '$(System.ArtifactsDirectory)'
+    
+    - task: AzureFunctionApp@1
+      displayName: 'Deploy azure functions app'
+      inputs:
+        azureSubscription: '$(azureSubscription)'
+        appType: 'FunctionAppLinux'
+        appName: '$(FunctionAppName)'
+        package: '$(System.ArtifactStagingDirectory)/function/*.zip'
+        deploymentMethod: 'auto'
