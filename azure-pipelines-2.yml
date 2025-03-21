@@ -4,13 +4,13 @@ trigger:
     - main
   paths:
     include:
-    - src/backend/AzFunctions/**  
+    - src/backend/AzFunctions/CD_pipelineFunction/**  
 
 pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  azureSubcription: 'azurerm'
+  azureSubcription: 'azureRM'
   functionAppName: 'acr-pipeline-trigger'
   projectPath: 'ACR_TriggerFunc'
   buildConfiguration: 'Release'
@@ -68,7 +68,7 @@ stages:
     - task: AzureFunctionApp@1
       displayName: 'Deploy azure functions app'
       inputs:
-        azureSubscription: '$(azureSubscription)'
+        azureSubscription: '$(azureSubcription)'
         appType: 'FunctionAppLinux'
         appName: '$(FunctionAppName)'
         package: '$(System.ArtifactStagingDirectory)/function/*.zip'
