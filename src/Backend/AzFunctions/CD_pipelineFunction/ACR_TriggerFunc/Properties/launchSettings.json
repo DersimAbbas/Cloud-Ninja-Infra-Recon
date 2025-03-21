@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "ACR_TriggerFunc": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7253"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker",
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "containerRunArguments": "--init",
+      "httpPort": 31796,
+      "useSSL": false
+    }
+  }
+}
