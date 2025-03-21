@@ -1,0 +1,16 @@
+﻿@inject HttpClient http
+@page "/"
+
+<PageTitle>Home</PageTitle>
+
+<h1>Hello, world!</h1>
+<h2>@test</h2>
+
+@code{
+    public string? test { get; set; }
+    
+    protected override async Task OnInitializedAsync()
+    {
+         test = await http.GetFromJsonAsync<string>("https://localhost:7052/api/init");
+    }
+}
