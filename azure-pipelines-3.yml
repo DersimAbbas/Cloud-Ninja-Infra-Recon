@@ -1,6 +1,11 @@
 trigger: none
 pr: none
 
+resources:
+  pipelines:
+    - pipeline: DockerCompose
+      source: CD DockerCompose
+      trigger: true
 pool:
   vmImage: 'ubuntu-latest'
 
