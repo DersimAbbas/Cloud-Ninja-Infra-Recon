@@ -23,7 +23,7 @@ var init = new[]
 
 var summaries = new[]
 {
-    "Cloud ninja initalized.", "Create your docker compose ", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+    "Cloud ninja initalized.", "Create your docker compose ", "we are at the end of this infrastructure", "help me", "dead inside", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
 };
 
 app.MapGet("api/init", () =>
