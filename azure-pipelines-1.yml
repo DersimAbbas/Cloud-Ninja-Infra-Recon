@@ -60,6 +60,9 @@ stages:
               image: dersimabbas.azurecr.io/backend:latest
               expose:
                 - "8081"
+              environment:
+                - ASPNETCORE_ENVIRONMENT=Development
+                - ASPNETCORE_URLS=http://+:8081
               networks:
                 - app-network
             frontend:
@@ -67,6 +70,8 @@ stages:
               ports:
                 - "80:80"
               environment:
+                - ASPNETCORE_ENVIRONMENT=Development
+                - ASPNETCORE_URLS=http://+:80
                 - BackendUrl=http://backend:8081
               depends_on:
                 - backend
