@@ -10,7 +10,7 @@ builder.Services.AddHttpClient(
     "CloudNinjaBlazor.ServerAPI",
     client =>
     {
-        client.BaseAddress = new Uri("Https://localhost:7052");
+        client.BaseAddress = new Uri("Http://backend:8080/");
     }
 )
 .ConfigureHttpClient(client =>
@@ -22,12 +22,6 @@ builder.Services.AddHttpClient(
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
 
 app.UseHttpsRedirection();
 
