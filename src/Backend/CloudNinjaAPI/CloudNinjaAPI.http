@@ -1,4 +1,4 @@
-@CloudNinjaAPI_HostAddress = http://localhost:5046
+@CloudNinjaAPI_HostAddress = http://backend:8081
 
 GET {{CloudNinjaAPI_HostAddress}}/weatherforecast/
 Accept: application/json
