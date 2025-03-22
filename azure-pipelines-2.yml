@@ -71,5 +71,5 @@ stages:
         azureSubscription: '$(azureSubcription)'
         appType: 'FunctionAppLinux'
         appName: '$(FunctionAppName)'
-        package: '$(System.ArtifactStagingDirectory)/function/*.zip'
+        package: '$(System.ArtifactsDirectory)/function/*.zip'
         deploymentMethod: 'auto'
