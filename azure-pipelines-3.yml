@@ -45,31 +45,12 @@ steps:
         --docker-registry-server-url "https://dersimabbas.azurecr.io" \
         --enable-app-service-storage false
       
-      # Enable managed identity for the web app if not already enabled
-      echo "Ensuring managed identity is enabled for web app..."
-      az webapp identity assign \
-        --resource-group $(resourceGroupName)  \
-        --name $(webAppName)
-      
-      # Get the principal ID of the web app's managed identity
-      PRINCIPAL_ID=$(az webapp identity show \
-        --resource-group $(resourceGroupName) \
-        --name $(webAppName) \
-        --query principalId -o tsv)
-      
-      # Assign the AcrPull role to the web app's managed identity for my ACR
-      echo "Assigning AcrPull role to web app's managed identity..."
-      az role assignment create \
-        --assignee-object-id $PRINCIPAL_ID \
-        --assignee-principal-type ServicePrincipal \
-        --scope /subscriptions/$(az account show --query id -o tsv)/resourceGroups/$(resourceGroupName)/providers/Microsoft.ContainerRegistry/registries/dersimabbas \
-        --role AcrPull
-      
-      # Set the Docker Compose configuration
+      # Set the Docker Compose configuration - both parameters included
       echo "Setting Docker Compose configuration..."
       az webapp config container set \
-        --resource-group $(resourceGroupName) \
+        --resource-group $(resourceGroupName)  \
         --name $(webAppName) \
+        --multicontainer-config-type compose \
         --multicontainer-config-file "$FULL_URL"
       
       echo "Web app $(webAppName) updated to use Docker Compose from storage account"
