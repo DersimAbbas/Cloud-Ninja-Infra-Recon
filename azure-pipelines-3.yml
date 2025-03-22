@@ -1,0 +1,43 @@
+trigger: none
+pr: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  azureSubscription: 'azurerm'
+  storageAccountName: 'dersimdockercompose'
+  storageContainerName: 'compose'
+  webAppName: 'Cloud-NinjaRecon'
+  resourceGroupName: 'rg-dersimabbas'
+
+steps:
+- task: AzureCLI@2
+  displayName: 'update web app with docker compose'
+  inputs:
+    azureSubscription: $(azureSubscription)
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      STORAGE_KEY=$(az storage account keys list --account-name $(storageAccountName) --query "[0].value" -o tsv)
+      
+      END_DATE=$(date -u -d "30 minutes" '+%Y-%m-%dT%h:%MZ')
+      COMPOSE_URL=$(az storage blob url --account-name $(storageAccountName) --container-name $(storageContainerName) --name docker-compose.yml --output tsv)
+
+      FULL_URL="${COMPOSE_URL}?${SAS_TOKEN}"
+
+      az webapp config container set \
+        --resource-group $(resourceGroupName) \
+        --name $(webAppName) \
+        --multicontainer-config-type compose \
+        --multicontainer-config-url "$FULL_URL"
+
+        echo "web app $(webAppName)"
+
+        echo "web app $(webAppName) restarting web app to apply changes.."
+        az webapp restart --name $(webAppName) --resource-group $(resourceGroupName)
+
+        echo "webApp $(webAppName) restarted successfully"
+
+        echo "checking web app status"
+        az webapp show --name $(webAppName) --resource-group $(resourceGroupName) --query "state" -o tsv
