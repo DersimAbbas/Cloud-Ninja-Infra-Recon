@@ -60,12 +60,19 @@ stages:
               image: dersimabbas.azurecr.io/backend:latest
               ports:
               - "5000:8080"
+               environment:
+                 - ASPNETCORE_ENVIRONMENT=Development
+                 - ASPNETCORE_URLS=http://+:8080
               networks:
                 - app-network
             frontend:
               image: dersimabbas.azurecr.io/frontend:latest
               ports:
               - "80:8080"
+              environment:
+                - ASPNETCORE_ENVIRONMENT=Development
+                - ASPNETCORE_URLS=http://+:8080
+                - BackendUrl=http://backend:8080
               depends_on:
                 - backend
               network:
