@@ -18,31 +18,68 @@ variables:
 
 steps:
 - task: AzureCLI@2
-  displayName: 'update web app with docker compose'
+  displayName: 'Update Web App with Docker Compose'
   inputs:
     azureSubscription: $(azureSubscription)
     scriptType: bash
     scriptLocation: inlineScript
     inlineScript: |
+      # Get the storage account key
       STORAGE_KEY=$(az storage account keys list --account-name $(storageAccountName) --query "[0].value" -o tsv)
       
-      END_DATE=$(date -u -d "30 minutes" '+%Y-%m-%dT%h:%MZ')
+      # Generate a SAS token URL for the docker-compose.yml file
+      END_DATE=$(date -u -d "30 minutes" '+%Y-%m-%dT%H:%MZ')
       COMPOSE_URL=$(az storage blob url --account-name $(storageAccountName) --container-name $(storageContainerName) --name docker-compose.yml --output tsv)
-
+      SAS_TOKEN=$(az storage blob generate-sas --account-name $(storageAccountName) --account-key "$STORAGE_KEY" --container-name $(storageContainerName) --name docker-compose.yml --permissions r --expiry $END_DATE --https-only --output tsv) 
+      
+      # Combine the URL and SAS token
       FULL_URL="${COMPOSE_URL}?${SAS_TOKEN}"
-
+      
+      echo "Docker Compose URL generated with SAS token (token hidden for security)"
+      
+      # Configure the web app to use managed identity for ACR authentication
+      echo "Configuring web app container settings with managed identity..."
       az webapp config container set \
         --resource-group $(resourceGroupName) \
         --name $(webAppName) \
-        --multicontainer-config-type compose \
-        --multicontainer-config-url "$FULL_URL"
-
-        echo "web app $(webAppName)"
-
-        echo "web app $(webAppName) restarting web app to apply changes.."
-        az webapp restart --name $(webAppName) --resource-group $(resourceGroupName)
-
-        echo "webApp $(webAppName) restarted successfully"
-
-        echo "checking web app status"
-        az webapp show --name $(webAppName) --resource-group $(resourceGroupName) --query "state" -o tsv
+        --docker-registry-server-url "https://dersimabbas.azurecr.io" \
+        --enable-app-service-storage false
+      
+      # Enable managed identity for the web app if not already enabled
+      echo "Ensuring managed identity is enabled for web app..."
+      az webapp identity assign \
+        --resource-group $(resourceGroupName)  \
+        --name $(webAppName)
+      
+      # Get the principal ID of the web app's managed identity
+      PRINCIPAL_ID=$(az webapp identity show \
+        --resource-group $(resourceGroupName) \
+        --name $(webAppName) \
+        --query principalId -o tsv)
+      
+      # Assign the AcrPull role to the web app's managed identity for my ACR
+      echo "Assigning AcrPull role to web app's managed identity..."
+      az role assignment create \
+        --assignee-object-id $PRINCIPAL_ID \
+        --assignee-principal-type ServicePrincipal \
+        --scope /subscriptions/$(az account show --query id -o tsv)/resourceGroups/$(resourceGroupName)/providers/Microsoft.ContainerRegistry/registries/dersimabbas \
+        --role AcrPull
+      
+      # Set the Docker Compose configuration
+      echo "Setting Docker Compose configuration..."
+      az webapp config container set \
+        --resource-group $(resourceGroupName) \
+        --name $(webAppName) \
+        --multicontainer-config-file "$FULL_URL"
+      
+      echo "Web app $(webAppName) updated to use Docker Compose from storage account"
+      
+      # Restart the web app to apply changes
+      echo "Restarting web app to apply changes..."
+      az webapp restart --name $(webAppName) --resource-group $(resourceGroupName)
+      
+      echo "Web app $(webAppName) restarted successfully"
+      
+      # Check the status of the web app
+      echo "Checking web app status..."
+      az webapp show --name $(webAppName) --resource-group $(resourceGroupName) --query "state" -o tsv
