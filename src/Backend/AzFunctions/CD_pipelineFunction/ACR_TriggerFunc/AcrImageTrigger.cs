@@ -33,8 +33,8 @@ namespace ACR_TriggerFunc
 
                 _logger.LogInformation($"Repository: {repository}, Tag: {tag}");
 
-                
-                 if (repository == "frontend" || repository == "backend")
+                // Trigger pipeline only for frontend and backend images
+                if (repository == "frontend" || repository == "backend")
                  {
 
                     await TriggerAzureDevOpsPipeline();
