@@ -3,9 +3,34 @@ pr: none
 
 # For newer Azure DevOps versions
 resources:
-  webhooks:
-    - webhook: ComposeToWebApp
-      connection: acr-connection
+  containers:
+    - container: frontend
+      image: dersimabbas.azurecr.io/frontend:latest
+      type: ACR
+      azureSubscription: 'azurerm'
+      resourceGroup: 'rg-dersimabbas'
+      registry: 'dersimabbas'
+      repository: 'frontend'
+      trigger: 
+        enabled: true
+        tags:
+          include:
+          - latest
+    
+    - container: backend
+      image: dersimabbas.azurecr.io/backend:latest
+      type: ACR
+      azureSubscription: 'azurerm'
+      resourceGroup: 'rg-dersimabbas'
+      registry: 'dersimabbas'
+      repository: 'backend'
+      trigger: 
+        enabled: true
+        tags:
+          include:
+          - latest
+
+
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -14,9 +39,6 @@ variables:
   azureSubscription: 'azurerm'
   containerRegistry: 'dersimabbas.azurecr.io'
   webAppName: 'Cloud-NinjaRecon'
-  frontendImageName: 'frontend'
-  backendImageName: 'backend'
-  tag: 'latest'
 
 stages:
 - stage: Deploy
