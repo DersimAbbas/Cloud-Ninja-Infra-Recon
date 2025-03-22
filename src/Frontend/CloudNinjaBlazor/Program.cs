@@ -6,18 +6,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddHttpClient(
-    "CloudNinjaBlazor.ServerAPI",
-    client =>
-    {
-        client.BaseAddress = new Uri("Http://backend:8080/");
-    }
-)
-.ConfigureHttpClient(client =>
+builder.Services.AddScoped(sp =>
 {
-    client.DefaultRequestHeaders.Add("Accept", "application/json");
-    
+    var config = sp.GetRequiredService<IConfiguration>();
+    var baseAddress = config["ApiBaseUrl"]; // Read from appsettings.json
+    return new HttpClient { BaseAddress = new Uri(baseAddress) };
 });
+
 
 var app = builder.Build();
 
