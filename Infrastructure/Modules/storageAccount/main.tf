@@ -1,10 +1,7 @@
-provider "azurerm" {
-  features {}
-    resource_provider_registrations = "none"
-}
+
 
 data "azurerm_resource_group" "myRG" {
-  name = "rg-dersimabbas"
+  name = "RG-dersimabbas"
 }
 
 data "azurerm_storage_account" "storage" {

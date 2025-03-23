@@ -10,18 +10,28 @@ terraform {
 
 provider "azurerm" {
   features {}
+  resource_provider_registrations = "none"
+  subscription_id = var.subscription_id
 }
 
 module "storageAccount" {
   source = "./Modules/storageAccount"
 }
 
-module "webapp" {
-  source = "./Modules/WebApp"
-  compose_url = var.compose_url
+module "linux_plan" {
+  source = "./Modules/Service_plan"
+  
+}
+
+module "WebApp" {
+  source           = "./modules/webapp"
+  service_plan_id  = module.linux_plan.id
+  location         = module.linux_plan.location
+  compose_url      = var.compose_url
 }
 
 module "AzureFunctions" {
-  source = "./Modules/AzureFunctions"
-  azure_devops_pat = var.azure_devops_pat
+  source                      = "./modules/Azurefunctions"
+  service_plan_id  = module.linux_plan.id
+  location         = module.linux_plan.location
 }

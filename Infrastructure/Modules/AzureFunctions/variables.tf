@@ -1,6 +1,7 @@
+variable "service_plan_id" {
+  type = string
+}
 
-variable "azure_devops_pat" {
-  description = "Personal Access Token for Azure DevOps"
-  type        = string
-  sensitive   = true
+variable "location" {
+  type = string
 }

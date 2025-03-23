@@ -27,3 +27,4 @@ terraform.rc
 
 # Lock file - some teams include this, others don't
 .terraform.lock.hcl
+tfplan

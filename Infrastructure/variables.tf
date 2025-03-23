@@ -20,7 +20,8 @@ variable "compose_url" {
   type = string
   description = "Sas URL pointing to docker compose.yml blob"
 }
-variable "azure_devops_pat" {
+
+variable "subscription_id" {
   type = string
-  description = "PAT for authenticating to devops"
+  description = "sub id for azure"
 }
