@@ -1,0 +1,25 @@
+trigger: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  azureSubscription: 'AZR' 
+  containerRegistry: 'dersimabbas.azurecr.io'
+  functionsImageName: 'cloud-ninja-functions'
+  functionAppName: 'CloudNinjaBreacher' 
+  tag: 'latest'  
+
+stages:
+- stage: Deploy
+  displayName: 'Deploy to az func from container'
+  jobs:
+  - job:
+    displayName: 'Deploy azure functions'
+    steps:
+      - task: AzureFunctionAppContainer@1
+        displayName: 'Deploying'
+        inputs:
+          azureSubscription: $(azureSubscription)
+          appName: $(functionAppName)
+          imageName: $(containerRegistry)/$(functionsImageName):$(tag)
