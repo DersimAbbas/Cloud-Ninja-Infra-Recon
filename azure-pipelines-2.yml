@@ -10,7 +10,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  azureSubcription: 'azureRM'
+  azureSubscription: 'azureRM'
   functionAppName: 'CloudNinjaBreacher'
   projectPath: 'src/Backend/AzFunctions/CloudNinjaFunctions'
   buildConfiguration: 'Release'
@@ -68,7 +68,7 @@ stages:
     - task: AzureFunctionApp@1
       displayName: 'Deploy azure functions app'
       inputs:
-        azureSubscription: '$(azureSubcription)'
+        azureSubscription: '$(azureSubscription)'
         appType: 'FunctionAppLinux'
         appName: '$(FunctionAppName)'
         package: '$(System.ArtifactsDirectory)/function/*.zip'
