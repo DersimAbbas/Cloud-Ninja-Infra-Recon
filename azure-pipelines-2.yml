@@ -4,7 +4,7 @@ trigger:
     - main
   paths:
     include:
-    - src/backend/AzFunctions/CD_pipelineFunction/**  
+    - src/backend/AzFunctions/CloudNinjaFunctions/**  
 
 pool:
   vmImage: 'ubuntu-latest'
