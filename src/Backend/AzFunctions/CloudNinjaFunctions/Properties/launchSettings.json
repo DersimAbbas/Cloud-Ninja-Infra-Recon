@@ -2,8 +2,14 @@
   "profiles": {
     "CloudNinjaFunctions": {
       "commandName": "Project",
-      "commandLineArgs": "--port 7244",
-      "launchBrowser": false
+      "commandLineArgs": "--port 7244"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker",
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "containerRunArguments": "--init",
+      "httpPort": 32676,
+      "useSSL": false
     }
   }
 }
