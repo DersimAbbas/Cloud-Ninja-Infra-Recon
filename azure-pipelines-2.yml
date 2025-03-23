@@ -10,66 +10,32 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  azureSubscription: 'azureRM'
-  functionAppName: 'CloudNinjaBreacher'
-  projectPath: 'src/Backend/AzFunctions/CloudNinjaFunctions'
-  buildConfiguration: 'Release'
+  azureSubscription: 'AZR'  # Use your existing service connection
+  containerRegistry: 'dersimabbas.azurecr.io'
+  functionsDockerfilePath: 'CloudNinjaFunctions/Dockerfile'  # Adjust to your function app folder path
+  functionsImageName: 'cloudNinja-Function'
+  tag: 'latest'
 
 stages:
 - stage: Build
-  displayName: 'build Function app'
+  displayName: 'Build and Push Azure Functions Docker image'
   jobs:
-  - job: Build
-    displayName: 'build and test'
+  - job: BuildAndPush
+    displayName: 'Build and push Azure Functions docker image'
     steps:
-    - task: UseDotNet@2
-      displayName: 'Use .NET 8.0'
-      inputs:
-        packageType: 'sdk'
-        version: '8.0.x'
-    
-    - task: DotNetCoreCli@2
-      displayName: 'Restore NuGet Packages'
-      inputs:
-       command: 'restore'
-       projects: '$(Build.SourcesDirectory)/src/Backend/AzFunctions/CloudNinjaFunctions/*.csproj'
-       arguments: '--configuration $(buildConfiguration)'
+      - task: Docker@2
+        displayName: 'Login to ACR'
+        inputs:
+          command: login
+          containerRegistry: $(azureSubscription)
 
-    - task: DotNetCoreCLI@2
-      displayName: 'Publish Project'
-      inputs:
-        command: 'publish'
-        publishWebProjects: false
-        projects: '$(Build.SourcesDirectory)/src/Backend/AzFunctions/CloudNinjaFunctions/*.csproj'
-        arguments: '--configuration $(buildConfiguration) --output $(build.ArtifactStagingDirectory)'
-        zipAfterPublish: true
-    
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish Artifacts'
-      inputs:
-        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: 'function'
-
-- stage: Deploy
-  displayName: 'Deploy function app'
-  dependsOn: Build
-  jobs:
-  - job: Deploy
-    displayName: 'Deploy to Azure'
-    steps:
-    - task: DownloadBuildArtifacts@1
-      displayName: 'Downloading Artifacts'
-      inputs:
-        buildType: 'current'
-        downloadType: 'single'
-        artifactName: 'function'
-        downloadPath: '$(System.ArtifactsDirectory)'
-    
-    - task: AzureFunctionApp@1
-      displayName: 'Deploy azure functions app'
-      inputs:
-        azureSubscription: '$(azureSubscription)'
-        appType: 'FunctionAppLinux'
-        appName: '$(FunctionAppName)'
-        package: '$(System.ArtifactsDirectory)/function/*.zip'
-        deploymentMethod: 'auto'
+      - task: Docker@2
+        displayName: 'Build and push Azure Functions image'
+        inputs:
+          command: buildAndPush
+          repository: $(functionsImageName)
+          dockerfile: $(functionsDockerfilePath)
+          containerRegistry: $(azureSubscription)
+          tags: |
+            $(tag)
+           
