@@ -34,9 +34,9 @@ stages:
         displayName: 'Build and push Azure Functions image'
         inputs:
           command: buildAndPush
-          repository: $(functionsImageName)
+          repository: $(containerRegistry)/$(functionsImageName)
           dockerfile: 'src/Backend/AzFunctions/CloudNinjaFunctions/Dockerfile'
           containerRegistry: $(azureSubscription)
-          buildContext: 'src/backend/AzFunctions/CloudNinjaFunctions'
+          buildContext: 'src/Backend/AzFunctions/CloudNinjaFunctions'
           tags: |
             $(tag)
