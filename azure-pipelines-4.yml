@@ -19,13 +19,17 @@ stages:
     displayName: 'Deploy azure functions'
     steps:
       - task: AzureCLI@2
-        displayName: 'azure cli deploy'
+        displayName: Configure Function App container pull via MI
         inputs:
           azureSubscription: $(azureSubscription)
           scriptType: bash
           scriptLocation: inlineScript
           inlineScript: |
-            az functionapp config container set \
+            az functionapp identity assign \
+              --name $(functionAppName) \
+              --resource-group $(AZURE_RESOURCE_GROUP)
+
+            az webapp config container set \
               --name $(functionAppName) \
               --resource-group $(AZURE_RESOURCE_GROUP) \
               --docker-custom-image-name $(containerRegistry)/$(functionsImageName):$(tag) \
