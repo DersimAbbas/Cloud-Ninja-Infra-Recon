@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 using Azure.Identity;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Extensions.Logging;
 using Azure.ResourceManager;
 using Azure.ResourceManager.Network;
 using Azure.ResourceManager.Network.Models;
@@ -17,12 +15,16 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using System.Linq;
 using System.IO;
+using System.Net;
 using CloudNinjaFunctions;
 
 namespace CloudNinjaInfraRecon
 {
-    public static class FortressBreach
+    public class FortressBreach
     {
+        private readonly ILogger _logger;
+
+        // Ninja discovery phrases
         private static readonly string[] ninjaDiscoveryPhrases = new string[]
         {
             "Ninja discovered an unguarded entrance at",
@@ -32,6 +34,7 @@ namespace CloudNinjaInfraRecon
             "Ninja slipped through security gap at"
         };
 
+        // Ninja severity phrases
         private static readonly string[] ninjaSeverityPhrases = new string[]
         {
             "This breach is as wide as a samurai's stance!",
@@ -40,17 +43,34 @@ namespace CloudNinjaInfraRecon
             "This security hole is bigger than a sumo wrestler!",
             "The castle gate is wide open to enemy clans!"
         };
-
-        [FunctionName("FortressBreach")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
-            ILogger log)
+        private static readonly string[] ninjaAllClearPhrases = new string[]
         {
-            log.LogInformation("Fortress Breach ninja mission started.");
+            "Ninja reconnaissance complete! Your fortress walls stand strong against intruders.",
+            "Shadow warrior found no gaps in your defenses. Your castle is secure!",
+            "Silent inspection complete. Your digital domain is well-protected by invisible guardians.",
+            "Ninja clan approves of your security measures. No enemy can breach these walls!",
+            "The way of security is strong with this one. No vulnerabilities detected by the ninja scouts."
+        };
 
-            string resourceGroupName = req.Query["resourceGroupName"];
-            string storageConnectionString = req.Query["storageConnectionString"];
-            string containerName = req.Query["containerName"];
+
+
+        public FortressBreach(ILoggerFactory loggerFactory)
+        {
+            _logger = loggerFactory.CreateLogger<FortressBreach>();
+        }
+
+
+        [Function("FortressBreach")]
+        public async Task<HttpResponseData> Run(
+     [HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequestData req)
+        {
+            _logger.LogInformation("Fortress Breach ninja mission started.");
+
+            // Parse query parameters
+            var queryDictionary = System.Web.HttpUtility.ParseQueryString(req.Url.Query);
+            string resourceGroupName = queryDictionary["resourceGroupName"];
+            string storageConnectionString = queryDictionary["storageConnectionString"];
+            string containerName = queryDictionary["containerName"];
 
             // Handle null containerName
             if (string.IsNullOrEmpty(containerName))
@@ -58,14 +78,19 @@ namespace CloudNinjaInfraRecon
                 containerName = "ninja-recon-logs";
             }
 
+            // Create response
+            var response = req.CreateResponse();
+
             if (string.IsNullOrEmpty(resourceGroupName))
             {
-                return new BadRequestObjectResult("Please provide a resource group name");
+                response.StatusCode = HttpStatusCode.BadRequest;
+                await response.WriteStringAsync("Please provide a resource group name");
+                return response;
             }
 
             if (string.IsNullOrEmpty(storageConnectionString))
             {
-                return new BadRequestObjectResult("Please provide a storage connection string");
+                storageConnectionString = Environment.GetEnvironmentVariable("StorageConnectionString");
             }
 
             try
@@ -80,15 +105,28 @@ namespace CloudNinjaInfraRecon
                 var resourceGroup = resourceGroupResource.Value;
 
                 var exposedEndpoints = new List<ExposedEndpoint>();
+                int publicIpCount = 0;
+                int nsgCount = 0;
 
                 // Scan resource group for public IP addresses and network security groups
-                log.LogInformation($"Scanning resource group: {resourceGroup.Id.Name}");
+                _logger.LogInformation($"Scanning resource group: {resourceGroup.Id.Name}");
+
+                // Count NSGs separately
+                var nsgCollection = resourceGroup.GetNetworkSecurityGroups();
+                await foreach (var nsg in nsgCollection.GetAllAsync())
+                {
+                    nsgCount++;
+                    _logger.LogInformation($"Ninja examining NSG: {nsg.Data.Name}");
+                }
 
                 // Get all public IP addresses in the resource group
                 var publicIpCollection = resourceGroup.GetPublicIPAddresses();
 
                 await foreach (var publicIp in publicIpCollection.GetAllAsync())
                 {
+                    publicIpCount++;
+                    _logger.LogInformation($"Ninja inspecting public IP: {publicIp.Data.Name} with address {publicIp.Data.IPAddress ?? "unassigned"}");
+
                     // Check if the public IP is associated with a resource and has an IP address
                     if (publicIp.Data.IPAddress != null)
                     {
@@ -104,7 +142,7 @@ namespace CloudNinjaInfraRecon
                         }
 
                         // Check network security groups for open ports
-                        var openPorts = await ScanForOpenPorts(resourceGroup, associatedNics, log);
+                        var openPorts = await ScanForOpenPorts(resourceGroup, associatedNics);
 
                         // Create a report with ninja humor
                         var random = new Random();
@@ -123,30 +161,72 @@ namespace CloudNinjaInfraRecon
                             Severity = openPorts.Count > 5 ? "High" : (openPorts.Count > 2 ? "Medium" : "Low")
                         };
 
-                        exposedEndpoints.Add(exposedEndpoint);
+                        if (openPorts.Count > 0)
+                        {
+                            exposedEndpoints.Add(exposedEndpoint);
+                        }
                     }
                 }
 
-                // Save results to storage account
+                // Save results to storage account based on security status
                 string logFileName = $"fortress-breach-{DateTime.UtcNow:yyyy-MM-dd-HH-mm-ss}.json";
-                await SaveResultsToStorage(exposedEndpoints, storageConnectionString, containerName, logFileName, log);
+                string ninjaMessage;
+                string securityStatus;
 
-                return new OkObjectResult(new
+                // Use switch/case approach for different security statuses
+                switch (exposedEndpoints.Count)
+                {
+                    case 0:
+                        // Secure case - no exposed endpoints
+                        var random = new Random();
+                        ninjaMessage = ninjaAllClearPhrases[random.Next(ninjaAllClearPhrases.Length)];
+                        securityStatus = "Secure";
+
+                        // Save secure status report
+                        await SaveSecureStatusToStorage(ninjaMessage, publicIpCount, nsgCount, resourceGroup.Id.Name,
+                            storageConnectionString, containerName, logFileName);
+                        break;
+
+                    default:
+                        // Insecure case - exposed endpoints found
+                        ninjaMessage = "Security vulnerabilities detected! The ninja has found ways to infiltrate your fortress.";
+                        securityStatus = "Vulnerable";
+
+                        // Save vulnerability report
+                        await SaveResultsToStorage(exposedEndpoints, storageConnectionString, containerName, logFileName);
+                        break;
+                }
+
+                // Create success response
+                response.StatusCode = HttpStatusCode.OK;
+                await response.WriteAsJsonAsync(new
                 {
                     Message = "Fortress Breach mission completed successfully",
+                    NinjaReport = ninjaMessage,
+                    SecurityStatus = securityStatus,
                     ExposedEndpointsCount = exposedEndpoints.Count,
                     ExposedEndpoints = exposedEndpoints,
+                    ResourcesScanned = new
+                    {
+                        ResourceGroup = resourceGroup.Id.Name,
+                        PublicIpCount = publicIpCount,
+                        NetworkSecurityGroupCount = nsgCount
+                    },
                     LogFileName = logFileName
                 });
+
+                return response;
             }
             catch (Exception ex)
             {
-                log.LogError($"Error in Fortress Breach: {ex.Message}");
-                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                _logger.LogError($"Error in Fortress Breach: {ex.Message}");
+                response.StatusCode = HttpStatusCode.InternalServerError;
+                await response.WriteStringAsync($"Error in Fortress Breach: {ex.Message}");
+                return response;
             }
         }
 
-        private static async Task<List<OpenPort>> ScanForOpenPorts(ResourceGroupResource resourceGroup, List<string> nicIds, ILogger log)
+        private async Task<List<OpenPort>> ScanForOpenPorts(ResourceGroupResource resourceGroup, List<string> nicIds)
         {
             var openPorts = new List<OpenPort>();
 
@@ -174,16 +254,13 @@ namespace CloudNinjaInfraRecon
                     if (isAssociated) break;
                 }
 
-               
                 if (!isAssociated && nsg.Data.Subnets != null)
                 {
-                    
                     isAssociated = nsg.Data.Subnets.Count > 0;
                 }
 
-                if (isAssociated || nicIds.Count == 0) 
+                if (isAssociated || nicIds.Count == 0)
                 {
-                    
                     foreach (var rule in nsg.Data.SecurityRules)
                     {
                         if (rule.Direction == SecurityRuleDirection.Inbound &&
@@ -268,7 +345,8 @@ namespace CloudNinjaInfraRecon
             return openPorts;
         }
 
-        private static async Task SaveResultsToStorage(List<ExposedEndpoint> exposedEndpoints, string connectionString, string containerName, string blobName, ILogger log)
+
+        private async Task SaveResultsToStorage(List<ExposedEndpoint> exposedEndpoints, string connectionString, string containerName, string blobName)
         {
             try
             {
@@ -291,15 +369,69 @@ namespace CloudNinjaInfraRecon
                 using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
                 await blobClient.UploadAsync(stream, new BlobUploadOptions { Metadata = new Dictionary<string, string> { { "ScanType", "FortressBreach" } } });
 
-                log.LogInformation($"Successfully saved scan results to blob: {blobName}");
+                _logger.LogInformation($"Successfully saved scan results to blob: {blobName}");
             }
             catch (Exception ex)
             {
-                log.LogError($"Error saving results to storage: {ex.Message}");
+                _logger.LogError($"Error saving results to storage: {ex.Message}");
+                throw;
+            }
+        }
+        private async Task SaveSecureStatusToStorage(string ninjaMessage, int publicIpCount, int nsgCount,
+        string resourceGroupName, string connectionString, string containerName, string blobName)
+        {
+            try
+            {
+                // Create a BlobServiceClient
+                var blobServiceClient = new BlobServiceClient(connectionString);
+
+                // Get a reference to the container
+                var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
+
+                // Create the container if it doesn't exist
+                await containerClient.CreateIfNotExistsAsync();
+
+                // Get a reference to the blob
+                var blobClient = containerClient.GetBlobClient(blobName);
+
+                // Create a secure status report
+                var secureReport = new
+                {
+                    ScanTime = DateTime.UtcNow,
+                    SecurityStatus = "Secure",
+                    NinjaReport = ninjaMessage,
+                    ScannedResources = new
+                    {
+                        ResourceGroup = resourceGroupName,
+                        PublicIpCount = publicIpCount,
+                        NetworkSecurityGroupCount = nsgCount,
+                        Message = "All resources properly secured"
+                    }
+                };
+
+                // Convert the results to JSON
+                var json = JsonConvert.SerializeObject(secureReport, Formatting.Indented);
+
+                // Upload the JSON to the blob
+                using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+                await blobClient.UploadAsync(stream, new BlobUploadOptions
+                {
+                    Metadata = new Dictionary<string, string> {
+                    { "ScanType", "FortressBreach" },
+                    { "SecurityStatus", "Secure" }
+                }
+                });
+
+                _logger.LogInformation($"Successfully saved secure status report to blob: {blobName}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error saving secure status to storage: {ex.Message}");
                 throw;
             }
         }
     }
 
-   
+    // These classes should be in separate files in your actual project
+  
 }
