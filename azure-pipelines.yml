@@ -18,7 +18,7 @@ variables:
   backendDockerfilePath: 'src/Backend/CloudNinjaAPI/Dockerfile'
   frontendImageName: 'frontend'
   backendImageName: 'backend'
-  tag: '$(Build.BuildId)'
+  tag: 'latest'
 
 stages:
 - stage: Build
@@ -42,7 +42,7 @@ stages:
           containerRegistry: $(azureSubscription)
           tags: |
             $(tag)
-            latest
+            
         
       - task: Docker@2
         displayName: 'Build and push Backend Image'
@@ -53,4 +53,4 @@ stages:
           containerRegistry: $(azureSubscription)
           tags: |
             $(tag)
-            latest
+            
