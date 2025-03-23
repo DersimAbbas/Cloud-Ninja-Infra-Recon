@@ -23,6 +23,7 @@ stages:
         inputs:
           azureSubscription: $(azureSubscription)
           scriptType: bash
+          scriptLocation: inlineScript
           inlineScript: |
             az functionapp config container set \
               --name $(functionAppName) \
