@@ -19,14 +19,14 @@ stages:
     displayName: 'Deploy azure functions'
     steps:
       - task: AzureCLI@2
-        displayName: 'Deploying'
+        displayName: Configure Function to pull via MI
         inputs:
           azureSubscription: $(azureSubscription)
           scriptType: bash
-          scriptLocation: inlineScript
           inlineScript: |
             az functionapp config container set \
               --name $(functionAppName) \
               --resource-group $(AZURE_RESOURCE_GROUP) \
               --docker-custom-image-name $(containerRegistry)/$(functionsImageName):$(tag) \
-              --docker-registry-server-url https://$(containerRegistry)
+              --docker-registry-server-url https://$(containerRegistry) \
+              --docker-registry-server-managed-identity-enabled true
