@@ -10,9 +10,9 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  azureSubscription: 'AZR'  # Use your existing service connection
+  azureSubscription: 'AZR'  
   containerRegistry: 'dersimabbas.azurecr.io'
-  functionsDockerfilePath: 'CloudNinjaFunctions/Dockerfile'  # Adjust to your function app folder path
+  functionsDockerfilePath: 'src/backend/AzFunctions/CloudNinjaFunctions/Dockerfile' 
   functionsImageName: 'cloudNinja-Function'
   tag: 'latest'
 
@@ -36,6 +36,6 @@ stages:
           repository: $(functionsImageName)
           dockerfile: $(functionsDockerfilePath)
           containerRegistry: $(azureSubscription)
+          context: 'src/backend/AzFunctions/CloudNinjaFunctions'  
           tags: |
             $(tag)
-           
