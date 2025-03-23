@@ -319,10 +319,10 @@ namespace CloudNinjaInfraRecon
                     }
                 };
 
-                // Convert the results to JSON
+                
                 var json = JsonConvert.SerializeObject(secureReport, Formatting.Indented);
 
-                // Upload the JSON to the blob
+                
                 using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
                 await blobClient.UploadAsync(stream, new BlobUploadOptions
                 {
