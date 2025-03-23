@@ -4,7 +4,7 @@ trigger:
     - main
   paths:
     include:
-    - src/backend/AzFunctions/CloudNinjaFunctions/**  
+    - src/backend/AzFunctions/CloudNinjaFunctions 
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -32,7 +32,7 @@ stages:
       displayName: 'Restore NuGet Packages'
       inputs:
        command: 'restore'
-       projects: '$(projectPath)/*.csproj'
+       projects: '$(Build.SourcesDirectory)/src/Backend/AzFunctions/CloudNinjaFunctions/*.csproj'
        arguments: '--configuration $(buildConfiguration)'
 
     - task: DotNetCoreCLI@2
@@ -40,7 +40,7 @@ stages:
       inputs:
         command: 'publish'
         publishWebProjects: false
-        projects: '$(projectPath)/.csproj'
+        projects: '$(Build.SourcesDirectory)/src/Backend/AzFunctions/CloudNinjaFunctions/*.csproj'
         arguments: '--configuration $(buildConfiguration) --output $(build.ArtifactStagingDirectory)'
         zipAfterPublish: true
     
