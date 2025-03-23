@@ -19,7 +19,7 @@ stages:
     displayName: 'Deploy azure functions'
     steps:
       - task: AzureCLI@2
-        displayName: Configure Function to pull via MI
+        displayName: 'azure cli deploy'
         inputs:
           azureSubscription: $(azureSubscription)
           scriptType: bash
