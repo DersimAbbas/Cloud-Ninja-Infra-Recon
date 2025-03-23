@@ -4,7 +4,7 @@ trigger:
     - main
   paths:
     include:
-    - src/backend/AzFunctions/CloudNinjaFunctions/** 
+    - src/Backend/AzFunctions/CloudNinjaFunctions/** 
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -35,7 +35,7 @@ stages:
         inputs:
           command: buildAndPush
           repository: $(functionsImageName)
-          dockerfile: 'src/backend/AzFunctions/CloudNinjaFunctions/Dockerfile'
+          dockerfile: 'src/Backend/AzFunctions/CloudNinjaFunctions/Dockerfile'
           containerRegistry: $(azureSubscription)
           buildContext: 'src/backend/AzFunctions/CloudNinjaFunctions'
           tags: |
