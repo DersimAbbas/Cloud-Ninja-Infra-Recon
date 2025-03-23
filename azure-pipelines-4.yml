@@ -8,6 +8,7 @@ variables:
   containerRegistry: 'dersimabbas.azurecr.io'
   functionsImageName: 'cloud-ninja-functions'
   functionAppName: 'CloudNinjaBreacher' 
+  AZURE_RESOURCE_GROUP: 'RG-dersimabbas'
   tag: 'latest'  
 
 stages:
@@ -17,9 +18,15 @@ stages:
   - job:
     displayName: 'Deploy azure functions'
     steps:
-      - task: AzureFunctionAppContainer@1
+      - task: AzureCLI@2
         displayName: 'Deploying'
         inputs:
           azureSubscription: $(azureSubscription)
-          appName: $(functionAppName)
-          imageName: $(containerRegistry)/$(functionsImageName):$(tag)
+          scriptType: bash
+          scriptLocation: inlineScript
+          inlineScript: |
+            az functionapp config container set \
+              --name $(functionAppName) \
+              --resource-group $(AZURE_RESOURCE_GROUP) \
+              --docker-custom-image-name $(containerRegistry)/$(functionsImageName):$(tag) \
+              --docker-registry-server-url https://$(containerRegistry)
