@@ -11,8 +11,8 @@ pool:
 
 variables:
   azureSubcription: 'azureRM'
-  functionAppName: 'acr-pipeline-trigger'
-  projectPath: 'src/Backend/AzFunctions/CloudNinjaFunctions/**'
+  functionAppName: 'CloudNinjaBreacher'
+  projectPath: 'src/Backend/AzFunctions/CloudNinjaFunctions'
   buildConfiguration: 'Release'
 
 stages:
@@ -29,10 +29,10 @@ stages:
         version: '8.0.x'
     
     - task: DotNetCoreCli@2
-      displayName: 'Restore nugetpackages'
+      displayName: 'Restore NuGet Packages'
       inputs:
        command: 'restore'
-       projects: '$(Build.SourcesDirectory)/src/Backend/AzFunctions/CloudNinjaFunctions/*.csproj'
+       projects: '$(projectPath)/*.csproj'
        arguments: '--configuration $(buildConfiguration)'
 
     - task: DotNetCoreCLI@2
@@ -40,7 +40,7 @@ stages:
       inputs:
         command: 'publish'
         publishWebProjects: false
-        projects: '$(Build.SourcesDirectory)/src/Backend/AzFunctions/CloudNinjaFunctions/*.csproj'
+        projects: '$(projectPath)/.csproj'
         arguments: '--configuration $(buildConfiguration) --output $(build.ArtifactStagingDirectory)'
         zipAfterPublish: true
     
