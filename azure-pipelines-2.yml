@@ -12,7 +12,7 @@ pool:
 variables:
   azureSubscription: 'AZR'
   containerRegistry: 'dersimabbas.azurecr.io'
-  functionsImageName: 'cloudNinja-Function'
+  functionsImageName: 'cloud-ninja-Functions'
   tag: 'latest'
 
 stages:
