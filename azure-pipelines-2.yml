@@ -12,7 +12,7 @@ pool:
 variables:
   azureSubcription: 'azureRM'
   functionAppName: 'acr-pipeline-trigger'
-  projectPath: 'src/Backend/AzFunctions/CD_pipelineFunction/ACR_TriggerFunc/**'
+  projectPath: 'src/Backend/AzFunctions/CloudNinjaFunctions/**'
   buildConfiguration: 'Release'
 
 stages:
@@ -32,7 +32,7 @@ stages:
       displayName: 'Restore nugetpackages'
       inputs:
        command: 'restore'
-       projects: '$(Build.SourcesDirectory)/src/Backend/AzFunctions/CD_pipelineFunction/ACR_TriggerFunc/*.csproj'
+       projects: '$(Build.SourcesDirectory)/src/Backend/AzFunctions/CloudNinjaFunctions/*.csproj'
        arguments: '--configuration $(buildConfiguration)'
 
     - task: DotNetCoreCLI@2
@@ -40,7 +40,7 @@ stages:
       inputs:
         command: 'publish'
         publishWebProjects: false
-        projects: '$(Build.SourcesDirectory)/src/Backend/AzFunctions/CD_pipelineFunction/ACR_TriggerFunc/*.csproj'
+        projects: '$(Build.SourcesDirectory)/src/Backend/AzFunctions/CloudNinjaFunctions/*.csproj'
         arguments: '--configuration $(buildConfiguration) --output $(build.ArtifactStagingDirectory)'
         zipAfterPublish: true
     
