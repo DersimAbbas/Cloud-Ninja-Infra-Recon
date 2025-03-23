@@ -19,13 +19,20 @@ resource "azurerm_linux_function_app" "acr_trigger" {
   site_config {
     application_stack {
       dotnet_version = "8.0"
+      docker {
+        registry_url = "dersimabbas.azurecr.io"
+        image_name = "cloud-ninja-functions"
+        image_tag = "latest"
+      }
     }
   }
-    app_settings ={
-        "FUNCTIONS_WORKER_RUNTIME" = "dotnet"
-        "WEBSITE_RUN_FROM_PACKAGE" = "1"
-    }
-   
+  app_settings ={
+      "FUNCTIONS_WORKER_RUNTIME" = "dotnet"
+      DOCKER_REGISTRY_SERVER_URL = "https://dersimabbas.azurecr.io"
+  }
+  identity {
+    type = "SystemAssigned"
+  }
 }
 output "function_app_url" {
   value = azurerm_linux_function_app.acr_trigger.default_hostname
