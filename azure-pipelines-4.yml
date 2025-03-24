@@ -26,10 +26,10 @@ stages:
       inputs:
         command: login
         containerRegistry: $(dockerRegistryServiceConnection)
-    - task: AzureFunctionAppContainer@1 
+    - task: AzureFunctionAppContainer@1
       inputs:
-        azureSubscription: '$(azureSubscription)'
-        appName: '$(functionAppName)'
-        imageName: $(containerRegistry)/$(imageRepository):$(tag)
-        
+        azureSubscription: 'azureRM'
+        appName: 'CloudNinjaBreacher'
+        imageName: 'cloud-ninja-functions'
+            
      
