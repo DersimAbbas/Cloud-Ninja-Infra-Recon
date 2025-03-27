@@ -59,23 +59,28 @@ namespace CloudNinjaInfraRecon
 
         [Function("WebAppNinjaScan")]
         public async Task<HttpResponseData> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequestData req)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req)
         {
             _logger.LogInformation("Web App Ninja Scan mission started.");
 
             // Parse query parameters
             var queryDictionary = System.Web.HttpUtility.ParseQueryString(req.Url.Query);
             string resourceGroupName = queryDictionary["resourceGroupName"];
-            string storageConnectionString = queryDictionary["storageConnectionString"];
-            string containerName = queryDictionary["containerName"];
+            var accountName = Environment.GetEnvironmentVariable("STORAGE_ACCOUNT_NAME");
+            var containerName = Environment.GetEnvironmentVariable("STORAGE_CONTAINER_NAME");
 
-            
+            var blobServiceClient = new BlobServiceClient(
+                new Uri($"https://{accountName}.blob.core.windows.net"),
+                new DefaultAzureCredential());
+
+            var container = blobServiceClient.GetBlobContainerClient(containerName);
+            await container.CreateIfNotExistsAsync();
+
             if (string.IsNullOrEmpty(containerName))
             {
                 containerName = "ninja-recon-logs";
             }
 
-            
             var response = req.CreateResponse();
 
             if (string.IsNullOrEmpty(resourceGroupName))
@@ -85,19 +90,14 @@ namespace CloudNinjaInfraRecon
                 return response;
             }
 
-            if (string.IsNullOrEmpty(storageConnectionString))
-            {
-                storageConnectionString = Environment.GetEnvironmentVariable("StorageConnectionString");
-            }
-
             try
             {
-                
+
                 var credential = new DefaultAzureCredential();
                 var armClient = new ArmClient(credential);
-
-                
+              
                 var subscription = await armClient.GetDefaultSubscriptionAsync();
+
                 var resourceGroupResource = await subscription.GetResourceGroupAsync(resourceGroupName);
                 var resourceGroup = resourceGroupResource.Value;
 
@@ -198,7 +198,7 @@ namespace CloudNinjaInfraRecon
 
                        
                         await SaveSecureStatusToStorage(ninjaMessage, webAppCount, resourceGroup.Data.Name,
-                            storageConnectionString, containerName, logFileName);
+                            accountName, containerName, logFileName);
                         break;
 
                     default:
@@ -209,7 +209,7 @@ namespace CloudNinjaInfraRecon
                         securityStatus = "Vulnerable";
 
                        
-                        await SaveVulnerabilityReportToStorage(webAppVulnerabilities, storageConnectionString, containerName, logFileName);
+                        await SaveVulnerabilityReportToStorage(webAppVulnerabilities, accountName, containerName, logFileName);
                         break;
                 }
 
@@ -240,37 +240,33 @@ namespace CloudNinjaInfraRecon
                 return response;
             }
         }
-
+        private BlobContainerClient GetContainerClient(string accountName, string containerName)
+        {
+            var client = new BlobServiceClient(
+                new Uri($"https://{accountName}.blob.core.windows.net"),
+                new DefaultAzureCredential());
+            return client.GetBlobContainerClient(containerName);
+        }
         private async Task SaveVulnerabilityReportToStorage(List<WebAppVulnerability> webAppVulnerabilities,
-            string connectionString, string containerName, string blobName)
+            string accountName, string containerName, string blobName)
         {
             try
             {
-                
-                var blobServiceClient = new BlobServiceClient(connectionString);
 
-               
-                var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
-
-                
+                var containerClient = GetContainerClient(accountName, containerName);
                 await containerClient.CreateIfNotExistsAsync();
 
-               
                 var blobClient = containerClient.GetBlobClient(blobName);
-
-               
                 var report = new
                 {
                     ScanTime = DateTime.UtcNow,
                     SecurityStatus = "Vulnerable",
                     WebAppVulnerabilities = webAppVulnerabilities
                 };
-
-               
                 var json = JsonConvert.SerializeObject(report, Formatting.Indented);
-
-                
+              
                 using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+
                 await blobClient.UploadAsync(stream, new BlobUploadOptions
                 {
                     Metadata = new Dictionary<string, string> {
@@ -289,20 +285,13 @@ namespace CloudNinjaInfraRecon
         }
 
         private async Task SaveSecureStatusToStorage(string ninjaMessage, int webAppCount,
-            string resourceGroupName, string connectionString, string containerName, string blobName)
+            string resourceGroupName, string accountName, string containerName, string blobName)
         {
             try
             {
-                
-                var blobServiceClient = new BlobServiceClient(connectionString);
-
-               
-                var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
-
-                
+                var containerClient = GetContainerClient(accountName, containerName);        
                 await containerClient.CreateIfNotExistsAsync();
-
-                
+               
                 var blobClient = containerClient.GetBlobClient(blobName);
 
                 // Create a secure status report
@@ -318,11 +307,8 @@ namespace CloudNinjaInfraRecon
                         Message = "All web apps properly secured"
                     }
                 };
-
-                
                 var json = JsonConvert.SerializeObject(secureReport, Formatting.Indented);
 
-                
                 using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
                 await blobClient.UploadAsync(stream, new BlobUploadOptions
                 {

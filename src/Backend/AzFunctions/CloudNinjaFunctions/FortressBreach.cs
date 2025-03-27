@@ -62,15 +62,17 @@ namespace CloudNinjaInfraRecon
 
         [Function("FortressBreach")]
         public async Task<HttpResponseData> Run(
-     [HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequestData req)
+     [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestData req)
         {
             _logger.LogInformation("Fortress Breach ninja mission started.");
 
             // Parse query parameters
             var queryDictionary = System.Web.HttpUtility.ParseQueryString(req.Url.Query);
             string resourceGroupName = queryDictionary["resourceGroupName"];
-            string storageConnectionString = queryDictionary["storageConnectionString"];
-            string containerName = queryDictionary["containerName"];
+            var accountName = Environment.GetEnvironmentVariable("STORAGE_ACCOUNT_NAME");
+            var containerName = Environment.GetEnvironmentVariable("STORAGE_CONTAINER_NAME");
+
+
 
             // Handle null containerName
             if (string.IsNullOrEmpty(containerName))
@@ -88,16 +90,22 @@ namespace CloudNinjaInfraRecon
                 return response;
             }
 
-            if (string.IsNullOrEmpty(storageConnectionString))
-            {
-                storageConnectionString = Environment.GetEnvironmentVariable("StorageConnectionString");
-            }
-
             try
             {
                 // Authenticate with Azure using DefaultAzureCredential (Managed Identity)
+
                 var credential = new DefaultAzureCredential();
+
+                var blobserviceClient = new BlobServiceClient(
+                  new Uri($"https://{accountName}.blob.core.windows.net"),
+                  new DefaultAzureCredential());
+
+
+
                 var armClient = new ArmClient(credential);
+
+                var container = blobserviceClient.GetBlobContainerClient(containerName);
+                await container.CreateIfNotExistsAsync();
 
                 // Get the subscription and resource group
                 var subscription = await armClient.GetDefaultSubscriptionAsync();
@@ -184,7 +192,7 @@ namespace CloudNinjaInfraRecon
 
                         // Save secure status report
                         await SaveSecureStatusToStorage(ninjaMessage, publicIpCount, nsgCount, resourceGroup.Id.Name,
-                            storageConnectionString, containerName, logFileName);
+                            accountName, containerName, logFileName);
                         break;
 
                     default:
@@ -193,7 +201,7 @@ namespace CloudNinjaInfraRecon
                         securityStatus = "Vulnerable";
 
                         // Save vulnerability report
-                        await SaveResultsToStorage(exposedEndpoints, storageConnectionString, containerName, logFileName);
+                        await SaveResultsToStorage(exposedEndpoints, accountName, containerName, logFileName);
                         break;
                 }
 
@@ -224,6 +232,14 @@ namespace CloudNinjaInfraRecon
                 await response.WriteStringAsync($"Error in Fortress Breach: {ex.Message}");
                 return response;
             }
+        }
+
+        private BlobContainerClient GetContainerClient(string accountName, string containerName)
+        {
+            var client = new BlobServiceClient(
+                new Uri($"https://{accountName}.blob.core.windows.net"),
+                new DefaultAzureCredential());
+            return client.GetBlobContainerClient(containerName);
         }
 
         private async Task<List<OpenPort>> ScanForOpenPorts(ResourceGroupResource resourceGroup, List<string> nicIds)
@@ -346,53 +362,26 @@ namespace CloudNinjaInfraRecon
         }
 
 
-        private async Task SaveResultsToStorage(List<ExposedEndpoint> exposedEndpoints, string connectionString, string containerName, string blobName)
+        private async Task SaveResultsToStorage(List<ExposedEndpoint> exposedEndpoints, string accountName, string containerName, string blobName)
         {
-            try
-            {
-                // Create a BlobServiceClient
-                var blobServiceClient = new BlobServiceClient(connectionString);
-
-                // Get a reference to the container
-                var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
-
-                // Create the container if it doesn't exist
-                await containerClient.CreateIfNotExistsAsync();
-
-                // Get a reference to the blob
-                var blobClient = containerClient.GetBlobClient(blobName);
-
-                // Convert the results to JSON
-                var json = JsonConvert.SerializeObject(exposedEndpoints, Formatting.Indented);
-
-                // Upload the JSON to the blob
-                using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-                await blobClient.UploadAsync(stream, new BlobUploadOptions { Metadata = new Dictionary<string, string> { { "ScanType", "FortressBreach" } } });
-
-                _logger.LogInformation($"Successfully saved scan results to blob: {blobName}");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error saving results to storage: {ex.Message}");
-                throw;
-            }
+            var containerClient = GetContainerClient(accountName, containerName);
+            await containerClient.CreateIfNotExistsAsync();
+            var blobClient = containerClient.GetBlobClient(blobName);
+            var json = JsonConvert.SerializeObject(exposedEndpoints, Formatting.Indented);
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+            await blobClient.UploadAsync(stream, new BlobUploadOptions { Metadata = new Dictionary<string, string> { { "ScanType", "FortressBreach" } } });
+            _logger.LogInformation($"Saved scan results to {blobName}");
         }
         private async Task SaveSecureStatusToStorage(string ninjaMessage, int publicIpCount, int nsgCount,
-        string resourceGroupName, string connectionString, string containerName, string blobName)
+        string resourceGroupName, string accountName, string containerName, string blobName)
         {
             try
             {
                 // Create a BlobServiceClient
-                var blobServiceClient = new BlobServiceClient(connectionString);
-
-                // Get a reference to the container
-                var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
-
-                // Create the container if it doesn't exist
+                var containerClient = GetContainerClient(accountName, containerName);
                 await containerClient.CreateIfNotExistsAsync();
-
-                // Get a reference to the blob
                 var blobClient = containerClient.GetBlobClient(blobName);
+
 
                 // Create a secure status report
                 var secureReport = new
@@ -432,6 +421,6 @@ namespace CloudNinjaInfraRecon
         }
     }
 
-    // These classes should be in separate files in your actual project
+   
   
 }
