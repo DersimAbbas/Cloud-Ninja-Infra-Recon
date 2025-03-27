@@ -8,7 +8,7 @@ variables:
   azureSubscription: 'azureRM' 
   containerRegistry: 'dersimabbas.azurecr.io'
   functionsImageName: 'cloud-ninja-functions'
-  functionAppName: 'CloudNinjaBreacher' 
+  functionAppName: 'ContainerFunctionsTest' 
   AZURE_RESOURCE_GROUP: 'RG-dersimabbas'
   tag: 'latest'  
 
@@ -29,7 +29,7 @@ stages:
     - task: AzureFunctionAppContainer@1
       inputs:
         azureSubscription: 'azureRM'
-        appName: 'CloudNinjaBreacher'
+        appName: 'ContainerFunctionsTest'
         imageName: 'cloud-ninja-functions'
             
      
