@@ -1,4 +1,5 @@
 using CloudNinjaBlazor.Components;
+using CloudNinjaBlazor.Server;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,15 @@ builder.Services.AddScoped(sp =>
     return new HttpClient { BaseAddress = new Uri(baseAddress) };
 });
 
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration.AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true);
+}
+
+builder
+    .Services.AddServerSideBlazor()
+    .AddCircuitOptions(options => options.DetailedErrors = true);
+builder .Services.AddScoped<NinjaAPI>();
 
 var app = builder.Build();
 

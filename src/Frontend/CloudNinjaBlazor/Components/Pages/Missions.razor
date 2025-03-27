@@ -1,0 +1,56 @@
+﻿@page "/missions"
+@using CloudNinjaBlazor.Server
+@inject HttpClient Http
+@inject NinjaAPI API
+
+<h2>Cloud Ninja - Mission Reports:</h2>
+
+<button class="btn btn-primary" @onclick="StartMission">Start Mission</button>
+
+@if (scanResult == null)
+{
+    <p>Waiting for mission to start...</p>
+}
+else if (scanResult.resourcesScanned == null)
+{
+    <p>Scan result is missing resource data.</p>
+}
+else
+{
+    <h3>Scan Result:</h3>
+    <p><strong>Status:</strong> @scanResult.SecurityStatus</p>
+    <p>@scanResult.NinjaReport</p>
+    <p><strong>Resource Group:</strong> @scanResult.resourcesScanned.ResourceGroup</p>
+    <p><strong>App Services Scanned:</strong> @scanResult.resourcesScanned.webAppCount</p>
+
+    <h4>Vulnerabilities Detected (@scanResult.webAppVurnCount)</h4>
+    @foreach (var vuln in scanResult.WebAppVulnarbilities)
+    {
+        <div class="card mb-2 p-2">
+            <strong>@vuln.ResourceName</strong> - <em>@vuln.VurnabilityType (@vuln.Severity)</em>
+            <p>@vuln.Description</p>
+            <small><strong>Recommendation: </strong>@vuln.Recommendation</small>
+        </div>
+    }
+}
+@code {
+    public NinjaScanResult scanResult = new();
+
+    public async Task StartMission()
+    {
+        try
+        {
+
+           scanResult = await API.ScanWebAppAsync();
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"ScanResult {scanResult.NinjaReport}");
+            Console.ResetColor();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+}
