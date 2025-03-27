@@ -1,0 +1,44 @@
+﻿<div class="ninja-card p-4">
+    <div class="text-center mb-4">
+        <h2 class="text-warning mb-3">Fortress Breach Scanner</h2>
+        <button class="ninja-button" @onclick="OnStartScan" disabled="@IsLoading">
+            <span>Start Fortress Breach Scan</span>
+            <span class="ms-2">🏰</span>
+        </button>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="text-center mt-4">
+            <div class="spinner-border text-warning" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="text-warning mt-3">Ninja is scanning your digital fortress...</div>
+        </div>
+    }
+
+    @if (ScanResult != null && !IsLoading)
+    {
+        <div class="mt-4">
+            <div class="card bg-dark mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h3 class="text-warning mb-0">@ScanResult.Message</h3>
+                        <span class="badge bg-danger">@ScanResult.ExposedEndPointsCount Exposed Endpoints</span>
+                    </div>
+                    <h4 class="text-warning">@ScanResult.NinjaReport</h4>
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-file-earmark-text me-2 text-warning"></i>
+                        <span>Log File: @ScanResult.LogFileName</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public NinjaScanResult? ScanResult { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public EventCallback OnStartScan { get; set; }
+} 

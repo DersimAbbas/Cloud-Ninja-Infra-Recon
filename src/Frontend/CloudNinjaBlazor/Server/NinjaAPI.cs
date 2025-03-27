@@ -42,5 +42,36 @@ namespace CloudNinjaBlazor.Server
                 return null;
             }
         }
+
+        public async Task<NinjaScanResult> ScanFortressBreachAsync()
+        {
+            try
+            {
+                // Adjust the URL if needed.
+                var response = await _httpClient.GetAsync($"/api/FortressBreach");
+                response.EnsureSuccessStatusCode();
+
+                var json = await response.Content.ReadAsStringAsync();
+
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"JSON response: {json}");
+                Console.ResetColor();
+
+                var scan = JsonSerializer.Deserialize<NinjaScanResult>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                return scan;
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Error: {ex.Message}");
+                Console.ResetColor();
+
+                return null;
+            }
+        }
     }
 }

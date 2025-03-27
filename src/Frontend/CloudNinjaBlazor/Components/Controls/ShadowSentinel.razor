@@ -1,0 +1,81 @@
+﻿@inject NinjaAPI API
+<div class="ninja-card p-4">
+    <div class="text-center mb-4">
+        <h2 class="text-warning mb-3">Shadow Sentinel Scanner</h2>
+        <button class="ninja-button" @onclick="OnStartScan" disabled="@IsLoading">
+            <span>Start Shadow Sentinel Scan</span>
+            <span class="ms-2">🌐</span>
+        </button>
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="text-center mt-4">
+            <div class="spinner-border text-warning" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="text-warning mt-3">Shadow Sentinel is scanning your App services...</div>
+        </div>
+    }
+
+    @if (ScanResult != null && !IsLoading)
+    {
+        <div class="mt-4">
+            <div class="card bg-dark mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h3 class="text-warning mb-0">@ScanResult.Message</h3>
+                        <span class="badge @(ScanResult.SecurityStatus?.ToLower() == "vulnerable" ? "bg-danger" : "bg-success")">
+                            @ScanResult.SecurityStatus
+                        </span>
+                    </div>
+                    <h4 class="text-warning">@ScanResult.NinjaReport</h4>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-building me-2 text-warning"></i>
+                                <span>@ScanResult.resourcesScanned?.webAppCount Web Apps in @ScanResult.resourcesScanned?.ResourceGroup</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-shield-exclamation me-2 text-warning"></i>
+                                <span>@ScanResult.webAppVurnCount Vulnerabilities Found</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mt-2">
+                        <i class="bi bi-file-earmark-text me-2 text-warning"></i>
+                        <span>Log File: @ScanResult.LogFileName</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public NinjaScanResult? ScanResult { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public EventCallback OnStartScan { get; set; }
+
+    private string GetSeverityClass(string? severity)
+    {
+        return (severity?.ToLower() ?? "unknown") switch
+        {
+            "high" => "border-danger",
+            "medium" => "border-warning",
+            "low" => "border-success",
+            _ => "border-secondary"
+        };
+    }
+
+    private string GetSeverityBadgeClass(string severity) => severity.ToLower() switch
+    {
+        "high" => "bg-danger",
+        "medium" => "bg-warning text-dark",
+        "low" => "bg-success",
+        _ => "bg-secondary"
+    };
+}
+

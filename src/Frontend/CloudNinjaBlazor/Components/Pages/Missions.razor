@@ -1,56 +1,216 @@
-﻿@page "/missions"
-@using CloudNinjaBlazor.Server
+﻿@using CloudNinjaBlazor.Components.Layout
+@layout CloudNinjaLayout
 @inject HttpClient Http
 @inject NinjaAPI API
 
-<h2>Cloud Ninja - Mission Reports:</h2>
+@page "/"
+<div class="container-fluid py-4">
+    <header class="text-center mb-4">
+        <h1 class="display-4 text-warning fw-bold mb-3">CloudNinja-Infra-Recon</h1>
+        <p class="lead display-6 text-light">Your Digital Fortress Guardian</p>
+    </header>
 
-<button class="btn btn-primary" @onclick="StartMission">Start Mission</button>
-
-@if (scanResult == null)
-{
-    <p>Waiting for mission to start...</p>
-}
-else if (scanResult.resourcesScanned == null)
-{
-    <p>Scan result is missing resource data.</p>
-}
-else
-{
-    <h3>Scan Result:</h3>
-    <p><strong>Status:</strong> @scanResult.SecurityStatus</p>
-    <p>@scanResult.NinjaReport</p>
-    <p><strong>Resource Group:</strong> @scanResult.resourcesScanned.ResourceGroup</p>
-    <p><strong>App Services Scanned:</strong> @scanResult.resourcesScanned.webAppCount</p>
-
-    <h4>Vulnerabilities Detected (@scanResult.webAppVurnCount)</h4>
-    @foreach (var vuln in scanResult.WebAppVulnarbilities)
-    {
-        <div class="card mb-2 p-2">
-            <strong>@vuln.ResourceName</strong> - <em>@vuln.VurnabilityType (@vuln.Severity)</em>
-            <p>@vuln.Description</p>
-            <small><strong>Recommendation: </strong>@vuln.Recommendation</small>
+    <div class="row g-4 d-flex justify-content-center">
+        <div class="col-lg-6 mb-4">
+            <ShadowSentinel 
+                ScanResult="@shadowSentinelResult" 
+                IsLoading="@isSentinelScanning" 
+                OnStartScan="StartShadowSentinelScan" />
+                
+            @if (errorMessage != null)
+            {
+                <div class="alert alert-danger mt-4">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div>
+                            <strong>API Connection Error:</strong> @errorMessage
+                            <div class="mt-2">
+                                <small>Please check that the API service is running and properly configured.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+                
+            @if (shadowSentinelResult?.WebAppVulnarbilities != null && !isSentinelScanning)
+            {
+                <div class="ninja-card p-4 mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="text-warning mb-0">Vulnerability Report</h3>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-download me-1"></i>Export
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-filter me-1"></i>Filter
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3">
+                        @foreach (var vulnerability in shadowSentinelResult.WebAppVulnarbilities)
+                        {
+                            <div class="col-md-6">
+                                <div class="card ninja-vuln-card bg-dark @GetSeverityClass(vulnerability.Severity)">
+                                    <div class="card-header d-flex justify-content-between align-items-center py-2">
+                                        <h6 class="card-title mb-0 text-warning">@vulnerability.VurnabilityType</h6>
+                                        <span class="badge @GetSeverityBadgeClass(vulnerability.Severity ?? "Unknown")">
+                                            @(vulnerability.Severity ?? "Unknown")
+                                        </span>
+                                    </div>
+                                    <div class="card-body py-3">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-box me-2 text-warning"></i>
+                                            <small>@vulnerability.ResourceName</small>
+                                        </div>
+                                        <p class="card-text small mb-2">@vulnerability.Description</p>
+                                        <div class="mt-2 p-2 recommendation-box">
+                                            <div class="d-flex align-items-start">
+                                                <i class="bi bi-lightbulb me-2 text-success mt-1"></i>
+                                                <small>
+                                                    <strong>Fix:</strong> @vulnerability.Recommendation
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
         </div>
-    }
-}
-@code {
-    public NinjaScanResult scanResult = new();
 
-    public async Task StartMission()
+        <div class="col-lg-6 mb-4">
+            <FortressBreach 
+                ScanResult="@fortressBreachResult" 
+                IsLoading="@isBreachScanning" 
+                OnStartScan="StartFortressBreachScan" />
+                
+            @if (fortressBreachResult?.ExposedEndPoints != null && !isBreachScanning)
+            {
+                <div class="ninja-card p-4 mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="text-warning mb-0">Exposed Endpoints Report</h3>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-download me-1"></i>Export
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3">
+                        @foreach (var endpoint in fortressBreachResult.ExposedEndPoints)
+                        {
+                            <div class="col-md-6">
+                                <div class="card ninja-vuln-card bg-dark @GetSeverityClass(endpoint.Severity)">
+                                    <div class="card-header d-flex justify-content-between align-items-center py-2">
+                                        <h6 class="card-title mb-0 text-warning">@endpoint.ResourceName</h6>
+                                        <span class="badge @GetSeverityBadgeClass(endpoint.Severity ?? "Unknown")">
+                                            @(endpoint.Severity ?? "Unknown")
+                                        </span>
+                                    </div>
+                                    <div class="card-body py-3">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-globe me-2 text-warning"></i>
+                                            <small>
+                                                @endpoint.IpAddress 
+                                                @if (endpoint.OpenPorts != null && endpoint.OpenPorts.Any())
+                                                {
+                                                    <span class="ms-2 text-danger">
+                                                        Ports: @string.Join(", ", endpoint.OpenPorts)
+                                                    </span>
+                                                }
+                                            </small>
+                                        </div>
+                                        <p class="card-text small mb-2">@endpoint.NinjaReport</p>
+                                        <div class="mt-2 p-2 info-box">
+                                            <div class="d-flex align-items-start">
+                                                <i class="bi bi-info-circle me-2 text-info mt-1"></i>
+                                                <small>
+                                                    <strong>Resource Group:</strong> @endpoint.ResourceGroup
+                                                    <br>
+                                                    <strong>Scan Time:</strong> @endpoint.ScanTime.ToString("yyyy-MM-dd HH:mm:ss")
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+        
+    </div>
+</div>
+
+@code {
+    private NinjaScanResult? shadowSentinelResult;
+    private NinjaScanResult? fortressBreachResult;
+    private bool isSentinelScanning;
+    private bool isBreachScanning;
+    private string? errorMessage;
+
+
+    private async Task StartShadowSentinelScan()
     {
+        isSentinelScanning = true;
+        errorMessage = null;
+        
         try
         {
-
-           scanResult = await API.ScanWebAppAsync();
-
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"ScanResult {scanResult.NinjaReport}");
-            Console.ResetColor();
+            shadowSentinelResult = await API.ScanWebAppAsync();
+            await Task.Delay(1500); 
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            errorMessage = "Unable to connect to the API service. " + ex.Message;
+            shadowSentinelResult = null;
+        }
+        finally
+        {
+            isSentinelScanning = false;
         }
     }
+    private async Task StartFortressBreachScan()
+    {
+        isBreachScanning = true;
+        errorMessage = null;
 
+        try
+        {
+            fortressBreachResult = await API.ScanFortressBreachAsync();
+            await Task.Delay(1500);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Unable to connect to the API service. " + ex.Message;
+            fortressBreachResult = null;
+        }
+        finally
+        {
+            isBreachScanning = false;
+        }
+    }
+    
+    private string GetSeverityClass(string? severity)
+    {
+        return (severity?.ToLower() ?? "unknown") switch
+        {
+            "high" => "border-danger",
+            "medium" => "border-warning",
+            "low" => "border-success",
+            _ => "border-secondary"
+        };
+    }
+
+    private string GetSeverityBadgeClass(string severity) => severity.ToLower() switch
+    {
+        "high" => "bg-danger",
+        "medium" => "bg-warning text-dark",
+        "low" => "bg-success",
+        _ => "bg-secondary"
+    };
 }

@@ -21,6 +21,13 @@ namespace CloudNinjaBlazor.Models
 
         [JsonPropertyName("ResourcesScanned")]
         public ResourceScanned? resourcesScanned { get; set; }
+
+        [JsonPropertyName("ExposedEndPointsCount")]
+        public int ExposedEndPointsCount { get; set; }
+
+        public List<ExposedEndpoint>? ExposedEndPoints { get; set; }
+
+        public string LogFileName { get; set; }
     }
 
     public class WebAppVurnability
@@ -39,6 +46,28 @@ namespace CloudNinjaBlazor.Models
 
         [JsonPropertyName("Recommendation")]
         public string? Recommendation { get; set; }
+    }
+
+    public class ExposedEndpoint
+    {
+        [JsonPropertyName("ResourceId")]
+        public string? ResourceId { get; set; }
+        [JsonPropertyName("ResourceName")]
+        public string? ResourceName { get; set; }
+        [JsonPropertyName("ResourceGroup")]
+        public string? ResourceGroup { get; set; }
+        [JsonPropertyName("IpAddress")]
+        public string? IpAddress { get; set; }
+        [JsonPropertyName("OpenPorts")]
+        public List<int>? OpenPorts { get; set; }
+        [JsonPropertyName("ScanTime")]
+        public DateTime ScanTime { get; set; }
+        [JsonPropertyName("NinjaReport")]
+        public string? NinjaReport { get; set; }
+        [JsonPropertyName("SecurityStatus")]
+        public string? Severity { get; set; }
+        [JsonPropertyName("Description")]
+        public string? Description { get; set; }
     }
 
     public class ResourceScanned
